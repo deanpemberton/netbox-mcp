@@ -7,6 +7,18 @@ uses semantic versioning.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-13
+
+### Security
+
+- Refresh locked Python dependencies and the Python container base.
+- Remove pip and ensurepip from the runtime image, including unused vendored dependencies.
+
+### Changed
+
+- Add isolated authenticated MCP container probes and candidate/published-image vulnerability checks.
+- Add dependency maintenance, CodeQL, and maintenance reporting workflows.
+
 ## [1.1.0] - 2026-08-29
 
 ### Added
@@ -42,5 +54,6 @@ uses semantic versioning.
 - Corrected bulk CRUD requests to use NetBox collection endpoints instead of a nonexistent
   `/bulk/` suffix.
 
-[Unreleased]: https://github.com/skuldgerry/netbox-mcp/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/skuldgerry/netbox-mcp/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/skuldgerry/netbox-mcp/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/skuldgerry/netbox-mcp/compare/v1.0.0...v1.1.0
