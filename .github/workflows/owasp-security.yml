@@ -1,0 +1,61 @@
+name: OWASP security gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    name: SAST and security patterns
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Bandit - Python source security
+        run: |
+          uvx --from bandit==1.8.6 bandit -r src scripts -ll -ii
+      - name: Semgrep - OWASP and security audit rules
+        run: |
+          uvx --from semgrep==1.145.0 --with 'pydantic<2.12' semgrep scan --config p/owasp-top-ten --config p/security-audit --error --metrics=off src scripts
+
+  dependencies:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Audit resolved dependencies
+        run: |
+          uv export --locked --no-dev --format requirements-txt --output-file /tmp/netbox-requirements.txt
+          uvx --from pip-audit==2.9.0 pip-audit --requirement /tmp/netbox-requirements.txt --strict
+
+  secrets:
+    name: Secret leakage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Gitleaks repository and history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

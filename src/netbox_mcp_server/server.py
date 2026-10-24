@@ -17,6 +17,7 @@ from starlette.responses import PlainTextResponse
 
 from netbox_mcp_server.config import Settings, configure_logging
 from netbox_mcp_server.netbox_client import NetBoxRestClient
+from netbox_mcp_server.image_upload import upload_device_image
 from netbox_mcp_server.netbox_types import NETBOX_OBJECT_TYPES
 
 PLUGIN_WRITE_OPERATIONS = {"create", "update", "delete"}
@@ -2179,6 +2180,33 @@ def netbox_delete_cluster(cluster_id: int) -> bool:
     return netbox.delete("virtualization/clusters", cluster_id)
 
 
+
+@mcp.tool
+def netbox_upload_device_image(
+    object_id: int,
+    filename: str,
+    image_base64: str,
+    content_type: str,
+    target: str = "device",
+    name: str = "",
+) -> dict[str, Any]:
+    """Upload an image to an existing NetBox device or device type.
+
+    Provide base64-encoded image bytes (not a URL). Supported formats: PNG,
+    JPEG, GIF and WebP; maximum decoded size 5 MiB. The NetBox token needs
+    add permission for image attachments and view permission for the target.
+    """
+    return upload_device_image(
+        netbox,
+        object_id=object_id,
+        filename=filename,
+        image_base64=image_base64,
+        content_type=content_type,
+        target=target,
+        name=name,
+    )
+
+
 def main() -> None:
     """Main entry point for the MCP server."""
     global netbox
@@ -2203,7 +2231,7 @@ def main() -> None:
             "This is insecure and should only be used for testing."
         )
 
-    if settings.transport == "http" and settings.host in ["0.0.0.0", "::", "[::]"]:  # noqa: S104 - checking, not binding
+    if settings.transport == "http" and settings.host in ["0.0.0.0", "::", "[::]"]:  # noqa: S104  # nosec B104 - warning on public bind, not binding
         logger.warning(
             f"HTTP transport is bound to {settings.host}:{settings.port}, which exposes the service to all network interfaces (IPv4/IPv6). "
             "This is insecure and should only be used for testing. Ensure this is secured with TLS/reverse proxy if exposed to network."
