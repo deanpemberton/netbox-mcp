@@ -1,11 +1,11 @@
 """Multipart upload validation and request-routing tests."""
 
 import base64
+from io import BytesIO
 
 import httpx
-from PIL import Image
-from io import BytesIO
 import pytest
+from PIL import Image
 
 from netbox_mcp_server.image_upload import upload_device_image
 from netbox_mcp_server.netbox_client import NetBoxRestClient
