@@ -3,16 +3,28 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   lock:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          persist-credentials: false
+          persist-credentials: true
       - uses: astral-sh/setup-uv@v7
       - run: uv lock
+      - name: Commit updated lockfile
+        if: github.event_name == 'pull_request'
+        env:
+          TARGET_BRANCH: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate dependency lockfile"
+            git push origin HEAD:"$TARGET_BRANCH"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: regenerated-uv-lock
