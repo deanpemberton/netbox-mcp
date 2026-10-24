@@ -1,6 +1,5 @@
 name: Generate lockfile candidate
 on:
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,15 +13,16 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv lock
       - name: Commit updated lockfile
-        if: github.event_name == 'pull_request'
         env:
-          TARGET_BRANCH: ${{ github.head_ref }}
+          TARGET_BRANCH: feat/netbox-device-image-uploads
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add uv.lock
           if ! git diff --cached --quiet; then
             git commit -m "Regenerate dependency lockfile"
+            git fetch origin "$TARGET_BRANCH"
+            git rebase "origin/$TARGET_BRANCH"
             git push origin HEAD:"$TARGET_BRANCH"
           fi
       - uses: actions/upload-artifact@v4
