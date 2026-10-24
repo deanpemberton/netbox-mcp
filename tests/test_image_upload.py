@@ -3,10 +3,18 @@
 import base64
 
 import httpx
+from PIL import Image
+from io import BytesIO
 import pytest
 
 from netbox_mcp_server.image_upload import upload_device_image
 from netbox_mcp_server.netbox_client import NetBoxRestClient
+
+
+def _valid_png() -> str:
+    out = BytesIO()
+    Image.new("RGB", (8, 8), "white").save(out, format="PNG")
+    return base64.b64encode(out.getvalue()).decode()
 
 
 def test_upload_device_image_multipart() -> None:
@@ -29,7 +37,7 @@ def test_upload_device_image_multipart() -> None:
             client,
             object_id=42,
             filename="device.png",
-            image_base64=base64.b64encode(b"\x89PNG\r\n\x1a\ncontent").decode(),
+            image_base64=_valid_png(),
             content_type="image/png",
         )
     finally:
@@ -64,6 +72,38 @@ def test_reject_invalid_images(filename: str, mime: str, payload: bytes) -> None
                 filename=filename,
                 content_type=mime,
                 image_base64=base64.b64encode(payload).decode(),
+            )
+    finally:
+        client.session.close()
+
+
+def test_reject_signature_only_image() -> None:
+    client = NetBoxRestClient("https://netbox.example.com", "token")
+    try:
+        with pytest.raises(ValueError):
+            upload_device_image(
+                client,
+                object_id=1,
+                filename="fake.png",
+                content_type="image/png",
+                image_base64=base64.b64encode(b"\\x89PNG\\r\\n\\x1a\\n").decode(),
+            )
+    finally:
+        client.session.close()
+
+
+def test_reject_oversized_pixel_count() -> None:
+    out = BytesIO()
+    Image.new("RGB", (5000, 5000)).save(out, format="PNG")
+    client = NetBoxRestClient("https://netbox.example.com", "token")
+    try:
+        with pytest.raises(ValueError, match="pixel count"):
+            upload_device_image(
+                client,
+                object_id=1,
+                filename="huge.png",
+                content_type="image/png",
+                image_base64=base64.b64encode(out.getvalue()).decode(),
             )
     finally:
         client.session.close()
