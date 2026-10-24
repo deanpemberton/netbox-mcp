@@ -3,6 +3,8 @@
 import base64
 import binascii
 import io
+
+import httpx
 import re
 from typing import Any
 
@@ -66,12 +68,16 @@ def upload_device_image(
         "name": name[:100],
     }
     # Supplying files allows httpx to generate the multipart Content-Type boundary.
-    headers = {"Content-Type": None}
-    response = client.session.post(
+    request = httpx.Request(
+        "POST",
         client._build_url("extras/image-attachments"),
         data=fields,
         files={"image": (filename, io.BytesIO(raw), content_type)},
-        headers=headers,
+        headers={
+            "Authorization": client.session.headers["Authorization"],
+            "Accept": "application/json",
+        },
     )
+    response = client.session.send(request)
     response.raise_for_status()
     return response.json()
