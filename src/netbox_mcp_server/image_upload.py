@@ -50,22 +50,22 @@ def _normalize_image(encoded: str, content_type: str) -> tuple[bytes, str]:
 
 def _decode_and_encode(raw: bytes, content_type: str) -> tuple[bytes, str]:
     with Image.open(io.BytesIO(raw)) as img:
-            expected = "PNG" if content_type == "image/png" else "JPEG"
-            if img.format != expected or getattr(img, "n_frames", 1) != 1:
-                raise ValueError("Unsupported image format or animation")
-            width, height = img.size
-            if not (0 < width <= MAX_DIMENSION and 0 < height <= MAX_DIMENSION):
-                raise ValueError("Image dimensions exceed limits")
-            if width * height > MAX_PIXELS:
-                raise ValueError("Image pixel count exceeds limit")
-            img.load()
-            # Re-encoding discards metadata, trailing payloads and polyglot content.
-            clean = ImageOps.exif_transpose(img).convert("RGB")
-            out = io.BytesIO()
-            if content_type == "image/png":
-                clean.save(out, format="PNG")
-            else:
-                clean.save(out, format="JPEG", quality=85)
+        expected = "PNG" if content_type == "image/png" else "JPEG"
+        if img.format != expected or getattr(img, "n_frames", 1) != 1:
+            raise ValueError("Unsupported image format or animation")
+        width, height = img.size
+        if not (0 < width <= MAX_DIMENSION and 0 < height <= MAX_DIMENSION):
+            raise ValueError("Image dimensions exceed limits")
+        if width * height > MAX_PIXELS:
+            raise ValueError("Image pixel count exceeds limit")
+        img.load()
+        # Re-encoding discards metadata, trailing payloads and polyglot content.
+        clean = ImageOps.exif_transpose(img).convert("RGB")
+        out = io.BytesIO()
+        if content_type == "image/png":
+            clean.save(out, format="PNG")
+        else:
+            clean.save(out, format="JPEG", quality=85)
     result = out.getvalue()
     if len(result) > MAX_IMAGE_BYTES:
         raise ValueError("Normalized image exceeds size limit")
