@@ -8,6 +8,7 @@ import base64
 import binascii
 import io
 import re
+import warnings
 from typing import Any
 
 import httpx
@@ -40,7 +41,15 @@ def _normalize_image(encoded: str, content_type: str) -> tuple[bytes, str]:
     if content_type == "image/jpeg" and not raw.startswith(b"\\xff\\xd8\\xff"):
         raise ValueError("JPEG signature mismatch")
     try:
-        with Image.open(io.BytesIO(raw)) as img:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            return _decode_and_encode(raw, content_type)
+    except (UnidentifiedImageError, OSError, SyntaxError, Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+        raise ValueError("Invalid or unsafe image") from exc
+
+
+def _decode_and_encode(raw: bytes, content_type: str) -> tuple[bytes, str]:
+    with Image.open(io.BytesIO(raw)) as img:
             expected = "PNG" if content_type == "image/png" else "JPEG"
             if img.format != expected or getattr(img, "n_frames", 1) != 1:
                 raise ValueError("Unsupported image format or animation")
@@ -57,8 +66,6 @@ def _normalize_image(encoded: str, content_type: str) -> tuple[bytes, str]:
                 clean.save(out, format="PNG")
             else:
                 clean.save(out, format="JPEG", quality=85)
-    except (UnidentifiedImageError, OSError, SyntaxError, Image.DecompressionBombError) as exc:
-        raise ValueError("Invalid or unsafe image") from exc
     result = out.getvalue()
     if len(result) > MAX_IMAGE_BYTES:
         raise ValueError("Normalized image exceeds size limit")
