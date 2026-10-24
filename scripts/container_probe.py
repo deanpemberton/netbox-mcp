@@ -77,7 +77,7 @@ async def probe():
 def main():
     for _ in range(45):
         try:
-            with urlopen("http://127.0.0.1:8000/health", timeout=2) as response:
+            with urlopen("http://127.0.0.1:8000/health", timeout=2)  # nosec B310 - fixed loopback HTTP health probe, no user-controlled URL as response:
                 if response.read() == b"OK":
                     break
         except (URLError, TimeoutError):
