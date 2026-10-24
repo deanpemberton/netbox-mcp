@@ -2231,7 +2231,7 @@ def main() -> None:
             "This is insecure and should only be used for testing."
         )
 
-    if settings.transport == "http" and settings.host in ["0.0.0.0", "::", "[::]"]:  # noqa: S104 - checking, not binding
+    if settings.transport == "http" and settings.host in ["0.0.0.0", "::", "[::]"]:  # noqa: S104  # nosec B104 - warning on public bind, not binding
         logger.warning(
             f"HTTP transport is bound to {settings.host}:{settings.port}, which exposes the service to all network interfaces (IPv4/IPv6). "
             "This is insecure and should only be used for testing. Ensure this is secured with TLS/reverse proxy if exposed to network."
