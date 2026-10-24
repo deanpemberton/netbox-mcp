@@ -28,7 +28,7 @@ jobs:
           uvx --from bandit==1.8.6 bandit -r src scripts -ll -ii
       - name: Semgrep - OWASP and security audit rules
         run: |
-          uvx --from semgrep==1.144.0 semgrep scan --config p/owasp-top-ten --config p/security-audit --error --metrics=off src scripts
+          uvx --from semgrep==1.145.0 semgrep scan --config p/owasp-top-ten --config p/security-audit --error --metrics=off src scripts
 
   dependencies:
     name: Dependency vulnerabilities
